@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Management</title>
+    <!-- Include Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Category Management</h1>
+        <a href="admin.html"><button class="btn btn-success" >Back</button></a>   
+        <!-- Form to Add/Edit Category -->
+        <div class="card my-4">
+            <div class="card-header">
+                <h3 id="form-title">Add New Category</h3>
+            </div>
+            <div class="card-body">
+                <form id="category-form">
+                    <input type="hidden" id="category-id" name="categoryId">
+                    <div class="mb-3">
+                        <label for="category-name" class="form-label">Category Name:</label>
+                        <input type="text" id="category-name" name="categoryName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category-description" class="form-label">Description:</label>
+                        <input type="text" id="category-description" name="description" class="form-control">
+                    </div>
+                    <button type="submit" id="submit-button" class="btn btn-primary">Add Category</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Category List -->
+        <h2>Category List</h2>
+        <table id="category-table" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Category ID</th>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Categories will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Base URL for your API
+        const apiUrl = "https://localhost:7229/api/category";
+
+        // Load all categories from the API
+        function loadCategories() {
+            $.ajax({
+                url: apiUrl,
+                method: 'GET',
+                success: function (categories) {
+                    const tableBody = $('#category-table tbody');
+                    tableBody.empty();
+                    categories.forEach(category => {
+                        tableBody.append(`
+                            <tr>
+                                <td>${category.categoryId}</td>
+                                <td>${category.categoryName}</td>
+                                <td>${category.description}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm edit-btn" data-id="${category.categoryId}">Edit</button>
+                                    <button class="btn btn-danger btn-sm delete-btn" data-id="${category.categoryId}">Delete</button>
+                                </td>
+                            </tr>
+                        `);
+                    });
+                }
+            });
+        }
+
+        // Handle form submission (Add or Edit)
+        $('#category-form').on('submit', function (e) {
+            e.preventDefault();
+            const categoryId = $('#category-id').val();
+            const categoryName = $('#category-name').val();
+            const description = $('#category-description').val();
+
+            let method = 'POST';
+            let url = apiUrl;
+
+            if (categoryId) {
+                method = 'PUT';
+                url = `${apiUrl}/${categoryId}`;
+            }
+
+            $.ajax({
+                url: url,
+                method: method,
+                data: JSON.stringify({
+                    categoryId: categoryId || 0,
+                    categoryName: categoryName,
+                    description: description
+                }),
+                contentType: 'application/json',
+                success: function () {
+                    loadCategories();
+                    clearForm();
+                    alert('Category saved successfully');
+                },
+                error: function () {
+                    alert('Error saving category');
+                }
+            });
+        });
+
+
+        // Handle Edit button click
+        $(document).on('click', '.edit-btn', function () {
+            const categoryId = $(this).data('id');
+            $.ajax({
+                url: `${apiUrl}/${categoryId}`,
+                method: 'GET',
+                success: function (category) {
+                    $('#category-id').val(category.categoryId);
+                    $('#category-name').val(category.categoryName);
+                    $('#category-description').val(category.description);
+                    $('#form-title').text('Edit Category');
+                    $('#submit-button').text('Update Category');
+                }
+            });
+        });
+
+        // Handle Delete button click
+        $(document).on('click', '.delete-btn', function () {
+            const categoryId = $(this).data('id');
+            if (confirm('Are you sure you want to delete this category?')) {
+                $.ajax({
+                    url: `${apiUrl}/${categoryId}`,
+                    method: 'DELETE',
+                    success: function () {
+                        loadCategories();
+                        alert('Category deleted successfully');
+                    },
+                    error: function () {
+                        alert('Category has product');
+                    }
+                });
+            }
+        });
+
+        // Clear form fields
+        function clearForm() {
+            $('#category-id').val('');
+            $('#category-name').val('');
+            $('#category-description').val('');
+            $('#form-title').text('Add New Category');
+            $('#submit-button').text('Add Category');
+        }
+
+        // Initial load of categories
+        $(document).ready(function () {
+            loadCategories();
+        });
+    </script>
+
+    <!-- Include Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
